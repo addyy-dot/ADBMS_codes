@@ -1,0 +1,162 @@
+1.  Create a Employee Management system database using MongoDB and implement 
+Inserting and saving document (batch insert, insert validation) 
+Removing document 
+Updating document (document replacement, using modifiers, up inserts, updating multiple documents, returning updated documents) 
+Cursors (Limit, skip, sort, advanced query options) 
+
+
+Code--
+
+*** Created database & employees collection***
+
+use employeeDB
+db.createCollection("employees", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["emp_id","name","age","dept","salary","role","status"],
+      properties: {
+        emp_id: { bsonType: "string" },
+        name:   { bsonType: "string" },
+        age:    { bsonType: "int", minimum: 18 },
+        dept:   { bsonType: "string" },
+        salary: { bsonType: ["int","double","decimal"], minimum: 0 },
+        role:   { bsonType: "string" },
+        status: { enum: ["Active","On Leave","Promoted","Resigned"] },
+        email:  { bsonType: ["string","null"] }
+      }
+    }
+  }
+})
+
+***Inserted ONE RECORD IN THE DB***
+
+db.employees.insertOne({
+  emp_id:"E001",
+  name:"Addyy",
+  age:25,
+  dept:"IT",
+  salary:60000,
+  role:"Backend Developer",
+  status:"Active",
+  email:"addyy@example.com"
+})
+
+
+***INSERTED MANY EMPLOYEES IN THE DB***
+
+db.employees.insertMany([
+  {
+    emp_id:"E002",
+    name:"Riya",
+    age:28,
+    dept:"HR",
+    salary:45000,
+    role:"HR Manager",
+    status:"Active",
+    email:null
+  },
+  {
+    emp_id:"E003",
+    name:"John",
+    age:32,
+    dept:"IT",
+    salary:90000,
+    role:"Cloud Engineer",
+    status:"Active",
+    email:"john@example.com"
+  },
+  {
+    emp_id:"E004",
+    name:"Sara",
+    age:27,
+    dept:"Sales",
+    salary:50000,
+    role:"Sales Executive",
+    status:"Active",
+    email:"sara@example.com"
+  }
+])
+
+
+***try and catch block method to handles errors easily***
+
+
+
+
+
+  db.employees.insertOne({
+    emp_id:"E999",
+    name:"Junior",
+    age:16, 
+    dept:"IT",
+    salary:10000,
+    role:"Intern",
+    status:"Active",
+    email:"kid@example.com"
+  })
+
+
+
+***used modifiers***
+
+ db.employees.updateOne(
+ {emp_id:"E003"},
+ {
+ $inc:{salary:5000},
+ $set:{status:"Promoted", email:"john@gmail.com"}
+ })
+
+***update manyy***
+
+db.employees.updateMany({}, { $set: { company: "TCS" } })
+
+***update***
+db.employees.find()
+
+***upsert***
+db.employees.updateOne(
+  { emp_id: "E010" }, 
+  { $set: { name: "New Employee", age: 25, dept: "IT", salary: 35000, role: "Support Staff", status: "Active" } },
+  { upsert: true }
+)
+
+*** delete on employee***
+db.employees.deleteOne({ emp_id: "E004" })
+
+***SHOW ONLY FIRST 2 EMPLOYEES*** LIMIT***
+
+db.employees.find().limit(2)
+
+
+***2️⃣ Skip — Skip first 2 and show next ones***
+db.employees.find().skip(2)
+
+
+***3️⃣ Sort — Show employees sorted by salary (highest first)***
+
+db.employees.find().sort({ salary: -1 })
+
+///📌 -1 = descending (highest → lowest)
+1 = ascending (lowest → highest)///
+
+***some advanced queries***
+/////////////////
+db.employees.find({
+  $or: [
+    { dept: "IT" },
+    { dept: "HR" }
+  ]
+})
+//////////////
+db.employees.find({
+  $where: "this.age > 25"
+})
+
+
+
+
+
+
+
+
