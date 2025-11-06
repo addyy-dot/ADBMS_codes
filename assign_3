@@ -1,0 +1,21 @@
+use OrderDB
+
+db.orders.insertMany([
+  { orderid:1, custid:"C101", date:new Date("2024-01-10"), amount:2500 },
+  { orderid:2, custid:"C102", date:new Date("2024-01-12"), amount:1800 },
+  { orderid:3, custid:"C101", date:new Date("2024-01-15"), amount:3200 },
+  { orderid:4, custid:"C103", date:new Date("2024-01-18"), amount:4000 },
+  { orderid:5, custid:"C102", date:new Date("2024-01-20"), amount:1500 },
+  { orderid:6, custid:"C101", date:new Date("2024-01-22"), amount:2800 }
+])
+
+// MapReduce: total amount per customer
+var mapFunc = function(){ emit(this.custid, this.amount); }
+var reduceFunc = function(key, values){ return Array.sum(values); }
+
+db.orders.mapReduce(mapFunc, reduceFunc, { out:"customer_total" })
+db.customer_total.find()
+
+// Indexing
+db.orders.createIndex({ custid:1 })
+db.orders.getIndexes()
