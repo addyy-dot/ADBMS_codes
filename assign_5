@@ -1,0 +1,58 @@
+use foodDB
+
+// Dimensions
+db.customer_dim.insertMany([
+  { customer_id:"C001", name:"Aman" },
+  { customer_id:"C002", name:"Riya" }
+])
+db.restaurant_dim.insertMany([
+  { restaurant_id:"R001", name:"Pizza House", cuisine:"Italian" },
+  { restaurant_id:"R002", name:"Spicy Hub",  cuisine:"Indian" }
+])
+db.item_dim.insertMany([
+  { item_id:"I001", item_name:"Pizza",   price:300 },
+  { item_id:"I002", item_name:"Biryani", price:200 }
+])
+db.time_dim.insertMany([
+  { time_id:"T001", date:"2024-01-10", month:"Jan", year:2024 },
+  { time_id:"T002", date:"2024-01-11", month:"Jan", year:2024 }
+])
+
+// Fact (one row = 1 item in an order)
+db.order_fact.insertMany([
+  { order_id:"O001", customer_id:"C001", restaurant_id:"R001", item_id:"I001", time_id:"T001", qty:2, amount:600 },
+  { order_id:"O002", customer_id:"C002", restaurant_id:"R002", item_id:"I002", time_id:"T002", qty:1, amount:200 }
+])
+
+// Example: total sales by restaurant (STAR)
+db.order_fact.aggregate([
+  { $lookup:{ from:"restaurant_dim", localField:"restaurant_id", foreignField:"restaurant_id", as:"r" } },
+  { $unwind:"$r" },
+  { $group:{ _id:"$r.name", total_sales:{ $sum:"$amount" } } }
+])
+
+
+// Split cuisine out of restaurant (snowflake)
+db.cuisine_dim.insertMany([
+  { cuisine_id:"CU01", cuisine_name:"Italian" },
+  { cuisine_id:"CU02", cuisine_name:"Indian" }
+])
+db.restaurant_dim_snow.insertMany([
+  { restaurant_id:"R001", name:"Pizza House", cuisine_id:"CU01" },
+  { restaurant_id:"R002", name:"Spicy Hub",  cuisine_id:"CU02" }
+])
+
+// Fact (same idea, separate collection for clarity)
+db.order_fact_snow.insertMany([
+  { order_id:"O003", customer_id:"C001", restaurant_id:"R001", item_id:"I001", time_id:"T001", qty:1, amount:300 },
+  { order_id:"O004", customer_id:"C002", restaurant_id:"R002", item_id:"I002", time_id:"T002", qty:2, amount:400 }
+])
+
+// Example: sales by cuisine (SNOWFLAKE)
+db.order_fact_snow.aggregate([
+  { $lookup:{ from:"restaurant_dim_snow", localField:"restaurant_id", foreignField:"restaurant_id", as:"r" } },
+  { $unwind:"$r" },
+  { $lookup:{ from:"cuisine_dim", localField:"r.cuisine_id", foreignField:"cuisine_id", as:"c" } },
+  { $unwind:"$c" },
+  { $group:{ _id:"$c.cuisine_name", total_sales:{ $sum:"$amount" } } }
+])
