@@ -1,0 +1,91 @@
+use universityDB
+
+// ---- Dimensions ----
+
+// Student Dimension
+db.student_dim.insertMany([
+  { student_id:"S001", name:"Arpit", gender:"Male", department:"Computer Science" },
+  { student_id:"S002", name:"Riya",  gender:"Female", department:"Mechanical" }
+])
+
+// Course Dimension
+db.course_dim.insertMany([
+  { course_id:"C001", course_name:"Database Systems", credits:4, faculty:"Dr. Sharma" },
+  { course_id:"C002", course_name:"Thermodynamics",  credits:3, faculty:"Dr. Verma" }
+])
+
+// Department Dimension
+db.department_dim.insertMany([
+  { dept_id:"D001", dept_name:"Computer Science", head:"Dr. Mehta" },
+  { dept_id:"D002", dept_name:"Mechanical", head:"Dr. Kapoor" }
+])
+
+// Time Dimension
+db.time_dim.insertMany([
+  { time_id:"T001", semester:"Sem 1", year:2024 },
+  { time_id:"T002", semester:"Sem 2", year:2024 }
+])
+
+// ---- Fact Table ----
+// Fact = student_course_enrollment
+db.enrollment_fact.insertMany([
+  { enroll_id:"E001", student_id:"S001", course_id:"C001", dept_id:"D001", time_id:"T001", marks:88, grade:"A" },
+  { enroll_id:"E002", student_id:"S002", course_id:"C002", dept_id:"D002", time_id:"T002", marks:75, grade:"B" }
+])
+
+// ---- Example Aggregation (Star) ----
+// Average marks by department
+db.enrollment_fact.aggregate([
+  { $lookup:{ from:"department_dim", localField:"dept_id", foreignField:"dept_id", as:"d" } },
+  { $unwind:"$d" },
+  { $group:{ _id:"$d.dept_name", avg_marks:{ $avg:"$marks" } } }
+])
+
+
+// ---- Normalized Dimensions ----
+
+// Faculty Dimension
+db.faculty_dim.insertMany([
+  { faculty_id:"F01", faculty_name:"Dr. Sharma", designation:"Professor" },
+  { faculty_id:"F02", faculty_name:"Dr. Verma",  designation:"Associate Professor" }
+])
+
+// Department Dimension (Normalized - references Faculty Head)
+db.department_dim_snow.insertMany([
+  { dept_id:"D001", dept_name:"Computer Science", head_faculty_id:"F01" },
+  { dept_id:"D002", dept_name:"Mechanical", head_faculty_id:"F02" }
+])
+
+// Course Dimension (Normalized - references Department)
+db.course_dim_snow.insertMany([
+  { course_id:"C001", course_name:"Database Systems", credits:4, dept_id:"D001" },
+  { course_id:"C002", course_name:"Thermodynamics",  credits:3, dept_id:"D002" }
+])
+
+// Student Dimension (remains same)
+db.student_dim_snow.insertMany([
+  { student_id:"S001", name:"Arpit", gender:"Male", dept_id:"D001" },
+  { student_id:"S002", name:"Riya",  gender:"Female", dept_id:"D002" }
+])
+
+// Time Dimension (remains same)
+db.time_dim_snow.insertMany([
+  { time_id:"T001", semester:"Sem 1", year:2024 },
+  { time_id:"T002", semester:"Sem 2", year:2024 }
+])
+
+// ---- Fact Table ----
+db.enrollment_fact_snow.insertMany([
+  { enroll_id:"E003", student_id:"S001", course_id:"C001", time_id:"T001", marks:91, grade:"A+" },
+  { enroll_id:"E004", student_id:"S002", course_id:"C002", time_id:"T002", marks:79, grade:"B+" }
+])
+
+// ---- Example Aggregation (Snowflake) ----
+// Average marks by Department (through normalized structure)
+db.enrollment_fact_snow.aggregate([
+  { $lookup:{ from:"course_dim_snow", localField:"course_id", foreignField:"course_id", as:"c" } },
+  { $unwind:"$c" },
+  { $lookup:{ from:"department_dim_snow", localField:"c.dept_id", foreignField:"dept_id", as:"d" } },
+  { $unwind:"$d" },
+  { $group:{ _id:"$d.dept_name", avg_marks:{ $avg:"$marks" } } }
+])
