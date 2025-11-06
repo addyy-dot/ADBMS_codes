@@ -1,0 +1,35 @@
+use EmployeeDB
+
+db.employees.insertMany([
+  { emp_id:201, name:"Alice", department:"HR", salary:50000, experience:3, skills:["Communication","Recruitment"] },
+  { emp_id:202, name:"Bob", department:"IT", salary:75000, experience:5, skills:["Java","MongoDB","Node.js"] },
+  { emp_id:203, name:"Charlie", department:"Finance", salary:68000, experience:4, skills:["Excel","Analytics"] },
+  { emp_id:204, name:"Diana", department:"IT", salary:90000, experience:7, skills:["Python","ML","Data Science"] },
+  { emp_id:205, name:"Eve", department:"Admin", salary:45000, experience:2, skills:["Management","Coordination"] },
+  { emp_id:206, name:"Frank", department:"IT", salary:80000, experience:6, skills:["C++","Linux"] },
+  { emp_id:207, name:"Grace", department:"HR", salary:null, experience:1, skills:["Recruitment"] },
+  { emp_id:208, name:"Hank", department:"Finance", salary:60000, experience:3, skills:["Accounting","Excel"] },
+  { emp_id:209, name:"Ivy", department:"IT", salary:95000, experience:8, skills:["AI","Python","TensorFlow"] },
+  { emp_id:210, name:"John", department:null, salary:50000, experience:4, skills:["Support"] }
+])
+
+
+db.employees.find().pretty()
+
+db.employees.findOne({ department:"IT" })
+
+db.employees.find({ salary:{ $gt:70000 } })
+
+db.employees.find({ $or:[{ department:"IT" },{ experience:{ $gt:6 } }] })
+
+db.employees.find({ department:{ $not:{ $eq:"HR" } } })
+
+db.employees.find({ department:null })
+
+db.employees.find({ name:{ $regex:/^A/ } })
+
+db.employees.find({ skills:"Python" })
+
+db.employees.find({ $where:function(){ return this.salary > this.experience*10000 } })
+
+db.employees.find({}, { _id:0, name:1, department:1, salary:1 })
