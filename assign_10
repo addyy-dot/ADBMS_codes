@@ -1,0 +1,82 @@
+use salesDB
+
+// Customer Dimension
+db.customer_dim.insertMany([
+  { customer_id:"C001", name:"Arpit", city:"Delhi" },
+  { customer_id:"C002", name:"Sneha", city:"Mumbai" }
+])
+
+// Product Dimension
+db.product_dim.insertMany([
+  { product_id:"P001", name:"Laptop", category:"Electronics", price:60000 },
+  { product_id:"P002", name:"Shirt",  category:"Clothing",    price:2000 }
+])
+
+// Store Dimension
+db.store_dim.insertMany([
+  { store_id:"S001", name:"Tech World", location:"Delhi" },
+  { store_id:"S002", name:"Fashion Hub", location:"Mumbai" }
+])
+
+// Time Dimension
+db.time_dim.insertMany([
+  { time_id:"T001", date:"2024-01-05", month:"Jan", year:2024 },
+  { time_id:"T002", date:"2024-01-06", month:"Jan", year:2024 }
+])
+
+// ---- Fact Table ----
+db.sales_fact.insertMany([
+  { order_id:"O001", customer_id:"C001", product_id:"P001", store_id:"S001", time_id:"T001", qty:1, total_amount:60000 },
+  { order_id:"O002", customer_id:"C002", product_id:"P002", store_id:"S002", time_id:"T002", qty:2, total_amount:4000 }
+])
+
+// ---- Example Aggregation (Star) ----
+// Total Sales by Product
+db.sales_fact.aggregate([
+  { $lookup:{ from:"product_dim", localField:"product_id", foreignField:"product_id", as:"p" } },
+  { $unwind:"$p" },
+  { $group:{ _id:"$p.name", total_sales:{ $sum:"$total_amount" } } }
+])
+
+
+// ---- Normalized Dimensions ----
+
+// Category Dimension
+db.category_dim.insertMany([
+  { category_id:"C01", category_name:"Electronics" },
+  { category_id:"C02", category_name:"Clothing" }
+])
+
+// Location Dimension
+db.location_dim.insertMany([
+  { location_id:"L01", city:"Delhi" },
+  { location_id:"L02", city:"Mumbai" }
+])
+
+// Product Dimension (references Category)
+db.product_dim_snow.insertMany([
+  { product_id:"P001", name:"Laptop", category_id:"C01", price:60000 },
+  { product_id:"P002", name:"Shirt",  category_id:"C02", price:2000 }
+])
+
+// Store Dimension (references Location)
+db.store_dim_snow.insertMany([
+  { store_id:"S001", name:"Tech World", location_id:"L01" },
+  { store_id:"S002", name:"Fashion Hub", location_id:"L02" }
+])
+
+// ---- Fact Table ----
+db.sales_fact_snow.insertMany([
+  { order_id:"O003", customer_id:"C001", product_id:"P001", store_id:"S001", time_id:"T001", qty:1, total_amount:60000 },
+  { order_id:"O004", customer_id:"C002", product_id:"P002", store_id:"S002", time_id:"T002", qty:3, total_amount:6000 }
+])
+
+// ---- Example Aggregation (Snowflake) ----
+// Total Sales by Category
+db.sales_fact_snow.aggregate([
+  { $lookup:{ from:"product_dim_snow", localField:"product_id", foreignField:"product_id", as:"p" } },
+  { $unwind:"$p" },
+  { $lookup:{ from:"category_dim", localField:"p.category_id", foreignField:"category_id", as:"c" } },
+  { $unwind:"$c" },
+  { $group:{ _id:"$c.category_name", total_sales:{ $sum:"$total_amount" } } }
+])
